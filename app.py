@@ -1,11 +1,10 @@
-import flask
 from flask import Flask, request, jsonify
 import pickle
 
 app = Flask(__name__)
 
 # Load your trained KMeans model
-with open(r'C:\Users\Immortal\kmeans_model.pkl', 'rb') as model_file:
+with open('kmeans_model.pkl', 'rb') as model_file:
     model = pickle.load(model_file)
 
 # Define mapping from cluster labels to safety status
@@ -35,4 +34,4 @@ def predict():
     return jsonify({'safety_status': safety_status})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True)  # Keep this for local testing; can be removed for production
