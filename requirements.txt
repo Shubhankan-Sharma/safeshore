@@ -1,0 +1,4 @@
+Flask==2.2.2          # The core Flask framework
+gunicorn==20.1.0      # WSGI HTTP Server for serving your app
+scikit-learn==1.1.2   # For KMeans and other machine learning algorithms
+numpy==1.23.3         # Required by scikit-learn for numerical operations
