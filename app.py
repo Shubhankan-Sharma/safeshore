@@ -33,5 +33,6 @@ def predict():
 
     return jsonify({'safety_status': safety_status})
 
+# Run the application with Gunicorn in production
 if __name__ == '__main__':
-    app.run(debug=True)  # Keep this for local testing; can be removed for production
+    app.run()  # This line can be omitted when using Gunicorn in production
