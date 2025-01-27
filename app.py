@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-from werkzeug.utils import url_quote
 import pickle
 
 app = Flask(__name__)
