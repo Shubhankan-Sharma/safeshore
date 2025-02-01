@@ -7,13 +7,6 @@ app = Flask(__name__)
 with open('kmeans_model.pkl', 'rb') as model_file:
     model = pickle.load(model_file)
 
-# Define mapping from cluster labels to safety status
-safety_status_mapping = {
-    0: "Safe",
-    1: "Caution",
-    2: "Danger"
-}
-
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.get_json()
@@ -28,10 +21,17 @@ def predict():
     # Make prediction
     prediction = model.predict([input_data])
     
-    # Map prediction to safety status
-    safety_status = safety_status_mapping.get(prediction[0], "Unknown")
+    # Assuming the prediction returns a string directly
+    safety_status = prediction[0]  # Use the prediction directly
 
-    return jsonify({'safety_status': safety_status})
+    # Return a detailed response
+    response = {
+        'safety_status': safety_status,
+        'input_data': input_data,
+        'message': f'The beach safety status for the provided input is: {safety_status}.'
+    }
+
+    return jsonify(response)
 
 # Run the application with Gunicorn in production
 if __name__ == '__main__':
