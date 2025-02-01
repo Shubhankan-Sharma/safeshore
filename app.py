@@ -22,7 +22,7 @@ def predict():
     prediction = model.predict([input_data])
     
     # Assuming the prediction returns a string directly
-    safety_status = str(prediction[0])  # Convert to string if necessary
+    safety_status = str(prediction[])  # Convert to string if necessary
 
     # Return a detailed response
     response = {
