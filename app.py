@@ -12,10 +12,10 @@ with open('scaler.pkl', 'rb') as scaler_file:
     scaler = pickle.load(scaler_file)
 
 # Define mapping from cluster labels to safety status
- safety_status_mapping = {
- 0: "Safe",
- 1: "Caution",
- 2: "Danger"
+safety_status_mapping = {
+    0: "Safe",
+    1: "Caution",
+    2: "Danger"
 }
 
 @app.route('/predict', methods=['POST'])
