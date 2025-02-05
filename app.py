@@ -12,10 +12,11 @@ with open('scaler.pkl', 'rb') as scaler_file:
     scaler = pickle.load(scaler_file)
 
 # Define mapping from cluster labels to safety status
-#     safety_status_mapping = {
-# 0: "Safe",
-# 1: "Caution",
-# 2: "Danger"}
+     safety_status_mapping = {
+ 0: "Safe",
+ 1: "Caution",
+ 2: "Danger"
+}
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -37,9 +38,9 @@ def predict():
     prediction = model.predict(scaled_input_data)
     
     # Map prediction to safety status
-    # safety_status = safety_status_mapping.get(prediction[0], "Unknown")
+    safety_status = safety_status_mapping.get(prediction[0], "Unknown")
 
-    return jsonify({'safety_status': prediction})
+    return jsonify({'safety_status': safety_status})
 
 # Run the application with Gunicorn in production
 if __name__ == '__main__':
