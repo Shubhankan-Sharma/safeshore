@@ -37,9 +37,9 @@ def predict():
     prediction = model.predict(scaled_input_data)
     
     # Map prediction to safety status
-    safety_status = safety_status_mapping.get(prediction[0], "Unknown")
+    # safety_status = safety_status_mapping.get(prediction[0], "Unknown")
 
-    return jsonify({'safety_status': safety_status})
+    return jsonify({'safety_status': prediction})
 
 # Run the application with Gunicorn in production
 if __name__ == '__main__':
