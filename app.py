@@ -18,7 +18,7 @@ thresholds = {
 model_features = ['temperature', 'currentspeed', 'ph', 'tideLength']
 
 # Create Flask app
-app = Flask(_name_)
+app = Flask(__name__)
 
 
 # Function to apply threshold checks
