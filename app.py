@@ -17,7 +17,7 @@ thresholds = {
 
 features = ['temperature', 'currentspeed', 'ph', 'tideLength']
 
-app = Flask(_name_)
+app = Flask(__name__)
 
 # Predict safety for a new beach
 def predict_new_beach(data):
@@ -96,5 +96,5 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     app.run(debug=True)
