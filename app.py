@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify
 import pandas as pd
+import numpy as np
 import pickle
 
-# Load the hybrid model
+# Load the model
 with open("coastal_hybrid_model.pkl", "rb") as f:
     hybrid_model = pickle.load(f)
 
-# Hardcoded threshold limits
+# Define thresholds and features
 thresholds = {
     'temperature': (12, 35),
     'currentspeed': (0, 2),
@@ -14,101 +15,86 @@ thresholds = {
     'tideLength': (0, 2)
 }
 
-# Features used for the ML model (only these go into the model)
-model_features = ['temperature', 'currentspeed', 'ph', 'tideLength']
+features = ['temperature', 'currentspeed', 'ph', 'tideLength']
 
-# Create Flask app
-app = Flask(__name__)
+app = Flask(_name_)
 
-
-# Function to apply threshold checks
-def is_within_thresholds(data):
-    for feature in model_features:
-        value = float(data[feature])
-        min_val, max_val = thresholds[feature]
-        if not (min_val <= value <= max_val):
-            return False
-    return True
-
-
-# Function to predict safety
+# Predict safety for a new beach
 def predict_new_beach(data):
-    # Threshold-based rule-out
-    if not is_within_thresholds(data):
+    new_df = pd.DataFrame([data], columns=features)
+    if (
+        (new_df['temperature'][0] < thresholds['temperature'][0]) or (new_df['temperature'][0] > thresholds['temperature'][1]) or
+        (new_df['currentspeed'][0] < thresholds['currentspeed'][0]) or (new_df['currentspeed'][0] > thresholds['currentspeed'][1]) or
+        (new_df['ph'][0] < thresholds['ph'][0]) or (new_df['ph'][0] > thresholds['ph'][1]) or
+        (new_df['tideLength'][0] < thresholds['tideLength'][0]) or (new_df['tideLength'][0] > thresholds['tideLength'][1])
+    ):
         return "Unsafe (Threshold)"
+    return "Safe" if hybrid_model.predict(new_df)[0] == 0 else "Unsafe (Clustering)"
 
-    # Prepare input only with model features
-    input_df = pd.DataFrame([{feature: float(data[feature]) for feature in model_features}])
-    prediction = hybrid_model.predict(input_df)[0]
-    return "Safe" if prediction == 0 else "Unsafe (Clustering)"
-
-
-# Function to check activity suitability
+# Evaluate suitability of activities
 def evaluate_activities(data):
-    temp = float(data['temperature'])
-    speed = float(data['currentspeed'])
-    ph = float(data['ph'])
-    tide = float(data['tideLength'])
-    turbidity = float(data['turbidity'])
-    scattering = float(data['scattering'])
-
+    row = data
     activity_conditions = {
-        'Swimming': (20 <= temp <= 30) and (speed < 2.0) and
-                    (6.5 <= ph <= 8.5) and (turbidity < 5) and
-                    (scattering < 1.0) and (0.5 <= tide <= 2.0),
+        'Swimming': (20 <= row['temperature'] <= 30) and (row['currentspeed'] < 2.0) and
+                    (6.5 <= row['ph'] <= 8.5) and (row['turbidity'] < 5) and
+                    (row['scattering'] < 1.0) and (0.5 <= row['tideLength'] <= 2.0),
 
-        'Scuba Diving': (18 <= temp <= 30) and (speed < 1.0) and
-                        (6.5 <= ph <= 8.5) and (turbidity < 5) and
-                        (scattering < 1.0) and (0.5 <= tide <= 2.0),
+        'Scuba Diving': (18 <= row['temperature'] <= 30) and (row['currentspeed'] < 1.0) and
+                        (6.5 <= row['ph'] <= 8.5) and (row['turbidity'] < 5) and
+                        (row['scattering'] < 1.0) and (0.5 <= row['tideLength'] <= 2.0),
 
-        'Surfing': (15 <= temp <= 25) and (speed < 1.5) and
-                   (6.5 <= ph <= 8.5) and (turbidity < 10) and
-                   (scattering < 1.0) and (1.0 <= tide <= 3.0),
+        'Surfing': (15 <= row['temperature'] <= 25) and (row['currentspeed'] < 1.5) and
+                   (6.5 <= row['ph'] <= 8.5) and (row['turbidity'] < 10) and
+                   (row['scattering'] < 1.0) and (1.0 <= row['tideLength'] <= 3.0),
 
-        'Sunbathing': (20 <= temp <= 35),
+        'Sunbathing': (20 <= row['temperature'] <= 35),
 
-        'Beach Volleyball': (20 <= temp <= 35),
+        'Beach Volleyball': (20 <= row['temperature'] <= 35),
 
-        'Jet Skiing': (20 <= temp <= 30) and (speed < 1.5) and
-                      (6.5 <= ph <= 8.5) and (turbidity < 10) and
-                      (scattering < 1.0) and (0.5 <= tide <= 2.0)
+        'Jet Skiing': (20 <= row['temperature'] <= 30) and (row['currentspeed'] < 1.5) and
+                      (6.5 <= row['ph'] <= 8.5) and (row['turbidity'] < 10) and
+                      (row['scattering'] < 1.0) and (0.5 <= row['tideLength'] <= 2.0)
     }
-
     return {activity: int(condition) for activity, condition in activity_conditions.items()}
 
-
-# Main prediction route
 @app.route('/predict', methods=['POST'])
 def predict():
+    data = request.json
     try:
-        data = request.json
+        # Extract input data
+        user_input = {
+            'temperature': data['temperature'],
+            'currentspeed': data['currentspeed'],
+            'ph': data['ph'],
+            'scattering': data['scattering'],
+            'tideLength': data['tideLength'],
+            'turbidity': data['turbidity']
+        }
 
-        # Ensure all required fields are present
-        required_fields = model_features + ['turbidity', 'scattering']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"error": f"Missing parameter: {field}"}), 400
+        # Get safety prediction
+        safety_prediction = predict_new_beach(user_input)
 
-        # Predict safety
-        safety_status = predict_new_beach(data)
-        safety_prediction = 1 if safety_status == "Safe" else 0
+        # Get activity suitability
+        activity_results = evaluate_activities(user_input)
 
-        # Evaluate recreational activity suitability
-        activity_suitability = evaluate_activities(data)
-
-        # Final response
+        # Prepare response
         response = {
-            **{k: data[k] for k in required_fields},
-            "safety_prediction": safety_prediction,
-            "safety_reason": safety_status,
-            **activity_suitability
+            'temperature': user_input['temperature'],
+            'currentspeed': user_input['currentspeed'],
+            'ph': user_input['ph'],
+            'scattering': user_input['scattering'],
+            'tideLength': user_input['tideLength'],
+            'turbidity': user_input['turbidity'],
+            'safety_prediction': 1 if safety_prediction == "Safe" else 0,
+            **activity_results
         }
 
         return jsonify(response)
 
+    except KeyError as e:
+        return jsonify({"error": f"Missing parameter: {str(e)}"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-if __name__ == "__main__":
+if _name_ == "_main_":
     app.run(debug=True)
